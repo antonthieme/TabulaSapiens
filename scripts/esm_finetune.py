@@ -1,3 +1,4 @@
+import os
 import argparse
 import logging
 import pandas as pd
@@ -10,26 +11,14 @@ import numpy as np
 import ast
 from torch.utils.tensorboard import SummaryWriter
 
-# Add src_path to sys.path
 src_path = Path("../src")
 sys.path.append(str(src_path))
 src_path = Path("../../src")
 sys.path.append(str(src_path))
 
-from ts_tf.esm import ProteinDNADataset, CustomEsmForPWM
+import ts_tf.custom_esm as cesm
+import ts_tf.util as util
 
-writer = SummaryWriter()
-
-def setup_logging(log_file: str):
-    """Set up logging configuration."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(log_file),
-            logging.StreamHandler()
-        ]
-    )
 
 def process_pwm(pwm_str: str) -> np.ndarray:
     try:
@@ -38,7 +27,7 @@ def process_pwm(pwm_str: str) -> np.ndarray:
     except Exception as e:
         raise ValueError(f"Error processing PWM: {e}")
 
-def fine_tune_esm(csv_file: str, epochs: int = 3, lr: float = 2e-5, k_folds: int = 5):
+def fine_tune_esm(model_name: str, csv_file: str, save_path: str, epochs: int = 3, lr: float = 2e-5, k_folds: int = 5, batch_size: int = 8):
     """Fine-tune the ESM model for protein-DNA interaction prediction."""
     try:
         logging.info("Starting fine-tuning process.")
@@ -55,10 +44,10 @@ def fine_tune_esm(csv_file: str, epochs: int = 3, lr: float = 2e-5, k_folds: int
         max_cols = max(pwm.shape[1] for pwm in pwms_decoded)
 
         # Initialize dataset and model
-        example_dataset = ProteinDNADataset(sequences, pwms, padding=(max_rows, max_cols)) # why defined here and then train and validation again
+        example_dataset = cesm.ProteinDNADataset(sequences, pwms, padding=(max_rows, max_cols)) # why defined here and then train and validation again
         print(f'example_dataset.max_rows: {example_dataset.max_rows}')
         print(f'example_dataset.max_cols: {example_dataset.max_cols}')
-        model = CustomEsmForPWM(output_shape=(example_dataset.max_rows, example_dataset.max_cols))
+        model = cesm.CustomEsmForPWM(model_name=model_name, output_shape=(example_dataset.max_rows, example_dataset.max_cols))
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
         # K-Fold Cross Validation
@@ -78,10 +67,10 @@ def fine_tune_esm(csv_file: str, epochs: int = 3, lr: float = 2e-5, k_folds: int
             val_sequences = sequences.iloc[val_ids]
             val_pwms = pwms.iloc[val_ids]
 
-            train_dataset = ProteinDNADataset(train_sequences, train_pwms, padding=(max_rows, max_cols))
-            val_dataset = ProteinDNADataset(val_sequences, val_pwms, padding=(max_rows, max_cols))
-            train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True)
-            val_dataloader = DataLoader(val_dataset, batch_size=8, shuffle=False)
+            train_dataset = cesm.ProteinDNADataset(train_sequences, train_pwms, padding=(max_rows, max_cols))
+            val_dataset = cesm.ProteinDNADataset(val_sequences, val_pwms, padding=(max_rows, max_cols))
+            train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+            val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
             model.train()
             for epoch in range(epochs):
@@ -129,8 +118,9 @@ def fine_tune_esm(csv_file: str, epochs: int = 3, lr: float = 2e-5, k_folds: int
                 logging.info(f"Validation Loss: {val_loss:.4f}")
 
         # Save model
-        model.save_model('./fine_tuned_esm')
-        logging.info("Model saved to './fine_tuned_esm'")
+        os.makedirs(save_path, exist_ok=True)
+        model.save_model(save_path)
+        logging.info(f"Model saved to '{save_path}'.")
 
     except FileNotFoundError as e:
         logging.error(f"File not found: {e}")
@@ -142,21 +132,35 @@ def fine_tune_esm(csv_file: str, epochs: int = 3, lr: float = 2e-5, k_folds: int
         logging.error(f"An unexpected error occurred: {e}")
         raise
 
-def run_fine_tune_esm(csv_file: str):
-    """Run fine-tuning process."""
-
-    try:
-        fine_tune_esm(csv_file, epochs=3)
-    except Exception as e:
-        logging.critical(f"Fine-tuning process failed: {e}")
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Fine-tune ESM for protein-DNA interaction prediction.")
-    parser.add_argument('csv_file', type=str, help='CSV file containing amino acid sequences and PWMs')
-    parser.add_argument('log_file', type=str, help='Log file to save output')
+    parser.add_argument('config_file', type=str, help='Config file containing script and model parameters')
+    parser.add_argument('job_id', type=str, help='Log file to save output')
     args = parser.parse_args()
 
-    setup_logging(args.log_file)
+    util.setup_logging(f"esm_finetune_{args.job_id}.log")
+    config = util.load_config(args.config_file)
+    logging.info(f"Loaded configuration: {config}")
+    
+    try:
+        model_save_dir = config['model']['save_dir']
+        model_name = config['model']['name']
+        epochs = config['training']['epochs']
+        lr = config['training']['learning_rate']
+        k_folds = config['training']['k_folds']
+        batch_size = config['training']['batch_size']
+        csv_file = config['data']['csv_file']
+        run_dir = config['run']['run_dir']
+    except KeyError as e:
+        logging.warning(f"Variable not defined in config file. {e}")
 
-    run_fine_tune_esm(args.csv_file)
+    model_save_path = os.path.join(model_save_dir, model_name, args.job_id)
+    summary_save_path = os.path.join(run_dir, f'esm_finetune_{args.job_id}')
+    writer = SummaryWriter(summary_save_path)
+
+    try:
+        fine_tune_esm(model_name=model_name, csv_file=csv_file, save_path=model_save_path, epochs=epochs, lr=lr, k_folds=k_folds, batch_size=batch_size)
+    except Exception as e:
+        logging.critical(f"Fine-tuning process failed: {e}")

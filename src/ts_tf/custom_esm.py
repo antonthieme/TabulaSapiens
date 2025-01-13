@@ -39,9 +39,10 @@ class ProteinDNADataset(Dataset):
 
 
 class CustomEsmForPWM(nn.Module):
-    def __init__(self, output_shape):
+    def __init__(self, model_name: str, output_shape):
         super().__init__()
-        self.esm, alphabet = torch.hub.load("facebookresearch/esm", "esm2_t6_8M_UR50D", source="github")
+        self.model_name = model_name
+        self.esm, alphabet = torch.hub.load("facebookresearch/esm", self.model_name, source="github")
         self.batch_converter = alphabet.get_batch_converter()
         self.output_shape = output_shape
         print(f"Output shape: {output_shape}")
