@@ -1,5 +1,5 @@
 model:
-  name: esm2_t36_3B_UR50D
+  name: esm2_t12_35M_UR50D
   pretrained: true
   save_dir: /home/anton.thieme/mydata/projects/TabulaSapiens/models/esm/
 
