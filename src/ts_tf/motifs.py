@@ -44,13 +44,19 @@ def retrieve_pfm(matrix_url):
         matrix_url (str): API URL for the motif matrix.
 
     Returns:
-        list: PFM as a 2D list (rows: A, C, G, T; columns: motif positions).
+        list: Reformatted PFM as a 2D list (rows: A, C, G, T; columns: motif positions).
     """
     response = requests.get(matrix_url)
     if response.status_code == 200:
         data = response.json()
-        print(f"Retrieved PFM for {matrix_url}: {data.get('pfm', 'No PFM')}")
-        return data["pfm"]
+        if "pfm" in data and data["pfm"]:
+            pfm_dict = data["pfm"]  # PFM as a dictionary
+            pfm = [pfm_dict["A"], pfm_dict["C"], pfm_dict["G"], pfm_dict["T"]]
+            print(f"Retrieved PFM for {matrix_url}: {pfm}")
+            return pfm
+        else:
+            print(f"No PFM found for {matrix_url}")
+            return None
     else:
         raise ValueError(f"Error fetching PFM: {response.status_code}")
 
@@ -103,3 +109,67 @@ def save_to_csv(motifs, output_file):
                     i + 1, pfm[0][i], pfm[1][i], pfm[2][i], pfm[3][i],
                     pwm[0][i], pwm[1][i], pwm[2][i], pwm[3][i]
                 ])
+
+
+def save_metadata_to_csv(metadata_list, output_file):
+    """
+    Save motif metadata (including UniProt IDs) to a CSV file.
+
+    Args:
+        metadata_list (list): List of metadata dictionaries for motifs.
+        output_file (str): Path to the output CSV file.
+    """
+    with open(output_file, mode="w", newline="") as f:
+        writer = csv.writer(f)
+        # Write the header
+        writer.writerow(["Matrix ID", "Gene Name", "UniProt ID", "Species", "Taxonomy ID"])
+        
+        for metadata in metadata_list:
+            matrix_id = metadata.get("matrix_id", "Unknown")
+            gene_name = metadata.get("name", "Unknown")
+            uniprot_ids = ";".join(metadata.get("uniprot_ids", []))  # Join multiple UniProt IDs with ";"
+            
+            # Extract species information
+            species_info = metadata.get("species", [{}])[0]
+            species_name = species_info.get("name", "Unknown")
+            tax_id = species_info.get("tax_id", "Unknown")
+            
+            # Write the row
+            writer.writerow([matrix_id, gene_name, uniprot_ids, species_name, tax_id])
+
+
+def fetch_motif_metadata(motif_id):
+    """
+    Fetch metadata for a given motif from JASPAR.
+
+    Args:
+        motif_id (str): JASPAR motif ID (e.g., "MA0634.1").
+
+    Returns:
+        dict: Metadata for the motif, including species and associated genes.
+    """
+    url = f"https://jaspar.genereg.net/api/v1/matrix/{motif_id}/"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        raise ValueError(f"Error fetching metadata for motif {motif_id}: {response.status_code}")
+
+def fetch_all_motif_metadata(motif_ids):
+    """
+    Retrieve metadata for all motifs.
+
+    Args:
+        motif_ids (list): List of JASPAR motif IDs.
+
+    Returns:
+        list: Metadata for all motifs.
+    """
+    metadata_list = []
+    for motif_id in motif_ids:
+        try:
+            metadata = fetch_motif_metadata(motif_id)
+            metadata_list.append(metadata)
+        except ValueError as e:
+            print(e)
+    return metadata_list
