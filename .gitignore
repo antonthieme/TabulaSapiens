@@ -1,1 +1,18 @@
+.gitignore
+
+# data
 data/*
+
+# checkpoints and caches
+*.ipynb_checkpoints/
+*__pycache__/
+
+# logs
+*.log
+*.out
+*.err
+
+# results
+results/*
+runs/*
+models/*
