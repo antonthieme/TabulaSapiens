@@ -3,10 +3,10 @@
 #SBATCH --output=../runs/%x_%j/esm_finetune_%j.out   # Custom output log file
 #SBATCH --error=../runs/%x_%j/esm_finetune_%j.err    # Custom error log file
 #SBATCH --partition=gpu                # Partition to submit to (e.g., gpu)
-#SBATCH --gres=gpu:4                   # Number of GPUs to request (adjust as needed)
+#SBATCH --gres=gpu:1                   # Number of GPUs to request (adjust as needed)
 #SBATCH --cpus-per-task=16              # Number of CPU cores per task (adjust as needed)
 #SBATCH --mem=128G                     # Memory per node (adjust as needed)
-#SBATCH --time=24:00:00                # Time limit (hh:mm:ss)
+#SBATCH --time=48:00:00                # Time limit (hh:mm:ss)
 #SBATCH --mail-type=ALL                # Notifications for job events (BEGIN, END, FAIL, etc.)
 #SBATCH --mail-user=thiemea@stanford.edu  # Email for notifications
 

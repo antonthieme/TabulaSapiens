@@ -130,9 +130,15 @@ def save_metadata_to_csv(metadata_list, output_file):
             uniprot_ids = ";".join(metadata.get("uniprot_ids", []))  # Join multiple UniProt IDs with ";"
             
             # Extract species information
-            species_info = metadata.get("species", [{}])[0]
-            species_name = species_info.get("name", "Unknown")
-            tax_id = species_info.get("tax_id", "Unknown")
+            try:
+                species_info = metadata.get("species", [{}])[0]
+                species_name = species_info.get("name", "Unknown")
+                tax_id = species_info.get("tax_id", "Unknown")
+            except IndexError:
+                print(f"Error extracting species information for {matrix_id}")
+                species_name = "Unknown"
+                tax_id = "Unknown"
+            
             
             # Write the row
             writer.writerow([matrix_id, gene_name, uniprot_ids, species_name, tax_id])
@@ -165,11 +171,18 @@ def fetch_all_motif_metadata(motif_ids):
     Returns:
         list: Metadata for all motifs.
     """
+    n_successful = 0
+    n_failed = 0
+
     metadata_list = []
     for motif_id in motif_ids:
         try:
             metadata = fetch_motif_metadata(motif_id)
             metadata_list.append(metadata)
+            n_successful += 1
         except ValueError as e:
+            n_failed += 1
             print(e)
+
+    print(f"Successfully fetched metadata for {n_successful} motifs. Failed to fetch metadata for {n_failed} motifs.")
     return metadata_list
