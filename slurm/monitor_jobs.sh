@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the directory where the logs are stored
-LOG_DIR=$HOME/mydata/projects/TabulaSapiens/logs
+LOG_DIR=$HOME/mydata/projects/TabulaSapiens/runs
 
 # Define how many lines from the end of the log files you want to display
 TAIL_LINES=10
@@ -17,8 +17,8 @@ monitor_jobs() {
         echo "------------------------------------"
         echo "Latest Log Files (Last $TAIL_LINES lines):"
 
-        # Find the most recent log file
-        LATEST_LOG=$(ls -t $LOG_DIR/*.log | head -n 1)
+        # Find the most recent log file in subdirectories
+        LATEST_LOG=$(find $LOG_DIR -type f -name "*.log" -printf "%T@ %p\n" 2>/dev/null | sort -n | tail -1 | awk '{print $2}')
 
         if [ -z "$LATEST_LOG" ]; then
             echo "No log files found."
