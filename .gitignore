@@ -6,6 +6,7 @@ data/*
 # checkpoints and caches
 *.ipynb_checkpoints/
 *__pycache__/
+*.pkl
 
 # logs
 *.log
