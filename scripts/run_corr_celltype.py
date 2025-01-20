@@ -23,7 +23,7 @@ from sklearn.metrics import silhouette_score
 from scipy.cluster.hierarchy import linkage, fcluster
 import pickle
 
-adata_tf = read_h5ad(os.path.join('..', 'data', 'adata_tf.h5ad'))
+adata_tf = read_h5ad(os.path.join('..', '..', 'data', 'adata_tf.h5ad'))
 
 # Step 1: Extract the gene expression matrix
 # Assuming adata.X is sparse; convert to dense
