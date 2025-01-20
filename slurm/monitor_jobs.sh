@@ -18,7 +18,7 @@ monitor_jobs() {
         echo "Latest Log Files (Last $TAIL_LINES lines):"
 
         # Find the most recent log file in subdirectories
-        LATEST_LOG=$(find $LOG_DIR -type f -name "*.log" -printf "%T@ %p\n" 2>/dev/null | sort -n | tail -1 | awk '{print $2}')
+        LATEST_LOG=$(find $LOG_DIR -type f \( -name "*.log" -o -name "*.err" -o -name "*.out" \) -printf "%T@ %p\n" 2>/dev/null | sort -n | tail -1 | awk '{print $2}')
 
         if [ -z "$LATEST_LOG" ]; then
             echo "No log files found."
