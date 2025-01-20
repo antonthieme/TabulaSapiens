@@ -11,3 +11,8 @@ Identification of transcription factor programs:
 - with dimensionality reduction:
     - pca + spearman
 - cNMF: https://github.com/dylkot/cNMF
+
+Prediction of transcription factor binding sites:
+- retrieval of transcription factor binding motifs from JASPAR: https://jaspar.elixir.no/
+- retrieval of corresponding amino acid sequences
+- fine-tuned custom esm2 model
