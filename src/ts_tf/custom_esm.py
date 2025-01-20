@@ -87,3 +87,16 @@ class CustomEsmForPWM(nn.Module):
         torch.save(self.state_dict(), f"{save_path}/model_weights.pth")
         torch.save({"output_shape": self.output_shape}, f"{save_path}/model_config.pth")
 
+
+def load_model(weights_path, config_path, model_name):
+    # Load the configuration
+    config = torch.load(config_path)
+    output_shape = config["output_shape"]
+
+    # Initialize the model with the loaded configuration
+    model = CustomEsmForPWM(model_name=model_name, output_shape=output_shape)
+
+    # Load the weights
+    model.load_state_dict(torch.load(weights_path))
+    model.eval()  # Set to evaluation mode
+    return model
