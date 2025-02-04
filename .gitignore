@@ -17,3 +17,9 @@ data/*
 results/*
 runs/*
 models/*
+
+# environment
+.env
+
+# external dependencies
+src/anndictionary/*
