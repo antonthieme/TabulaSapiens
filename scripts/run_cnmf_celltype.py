@@ -34,7 +34,7 @@ seed = 42 ## Specify a seed pseudorandom number generation for reproducibility
 
 celltypes = ['fibroblast', 'neuron', 'epithelial cell']
 
-k_to_try = np.arange(2, 10)
+k_to_try = np.arange(2, 30)
 
 adata_tf = read_h5ad(os.path.join('..', '..', 'data', 'adata_tf.h5ad'))
 sc.pp.filter_cells(adata_tf, min_genes=3)
@@ -52,29 +52,19 @@ del adata_tf.obs['group']
 
 for ct in celltypes:
     print(ct)
-    for folder in os.listdir(os.path.join('..', '..', 'data', 'donor_tissue_celltype_split')):
-        if ct == folder:
-            folderpath = os.path.join('..', '..', 'data', 'donor_tissue_celltype_split', folder)
-            for file in os.listdir(folderpath):
+    adata_tf_subs = adata_tf[adata_tf.obs['broad_cell_class'] == ct].copy()
 
-                adata_fn = os.path.join(folderpath, file)
-                adata_tf_subs = read_h5ad(adata_fn)
-                sc.pp.filter_cells(adata_tf_subs, min_genes=3)
-                sc.pp.filter_genes(adata_tf_subs, min_cells=3)
+    output_directory = os.path.join('../../results/cnmf/tf_cNMF_celltype', ct)
+    if not os.path.exists(output_directory):
+        os.mkdir(output_directory)
+    run_name = 'run_1'
 
-                if adata_tf_subs.shape[0] > 50:
+    cnmf_obj = cNMF(output_dir=output_directory, name=run_name)
+    cnmf_obj.prepare(counts_fn=os.path.join('..', '..', 'data', 'adata_tf.h5ad'), components=k_to_try, n_iter=numiter, seed=seed, num_highvar_genes=numhvgenes)
+    cnmf_obj.factorize(worker_i=0, total_workers=1)
+    cnmf_obj.combine()
 
-                    output_directory = os.path.join('../../results/cnmf/tf_cNMF_dtc_all_k_many_iter', ct)
-                    if not os.path.exists(output_directory):
-                        os.mkdir(output_directory)
-                    run_name = file[file.find('tf_'):file.find('.h5ad')]
+    cnmf_obj.k_selection_plot(close_fig=False)
 
-                    cnmf_obj = cNMF(output_dir=output_directory, name=run_name)
-                    cnmf_obj.prepare(counts_fn=adata_fn, components=k_to_try, n_iter=numiter, seed=seed, num_highvar_genes=numhvgenes)
-                    cnmf_obj.factorize(worker_i=0, total_workers=1)
-                    cnmf_obj.combine()
-
-                    cnmf_obj.k_selection_plot(close_fig=False)
-
-                    with open(os.path.join(output_directory, run_name, 'cnmf_obj_after_combine.pkl'), 'wb') as f:
-                        pickle.dump(cnmf_obj, f)
+    with open(os.path.join(output_directory, run_name, 'cnmf_obj_after_combine.pkl'), 'wb') as f:
+        pickle.dump(cnmf_obj, f)
