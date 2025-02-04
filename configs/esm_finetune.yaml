@@ -1,5 +1,5 @@
 model:
-  name: esm2_t30_150M_UR50D
+  name: esm2_t6_8M_UR50D
   pretrained: true
   save_dir: /home/anton.thieme/mydata/projects/TabulaSapiens/models/esm/
 
@@ -11,7 +11,7 @@ training:
   optimizer: Adam
 
 data:
-  csv_file: /home/anton.thieme/mydata/projects/TabulaSapiens/data/esm/train_data.csv
+  csv_file: /home/anton.thieme/mydata/projects/TabulaSapiens/data/esm/v2/train_data.csv
   shuffle: true
   train_split: 0.8
 

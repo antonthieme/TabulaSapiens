@@ -74,18 +74,22 @@ def compute_pwm(pfm, background_freq=None):
     """
     if background_freq is None:
         background_freq = {"A": 0.25, "C": 0.25, "G": 0.25, "T": 0.25}
-
+    
+    print(f"PFM: {pfm}")
     pfm = np.array(pfm)  # Convert to NumPy array
+    
     ppm = []
     for i in range(pfm.shape[0]):
         ppm.append(pfm[:][i] / np.sum(pfm[:][i], axis=0)) # Compute PPM for each position
 
+    print(f"PPM: {ppm}")
     ppm = np.array(ppm)
     pwm = np.zeros(pfm.shape)
-    for j in range(pfm.shape[0]):
+    for j in range(pfm.shape[1]):
         for k, base in enumerate(["A", "C", "G", "T"]):
-            pwm[j][k] = np.log2((ppm[j][k] + 1e-3) / background_freq[base])  # Add pseudocount to avoid log(0)
+            pwm[k][j] = np.log2((ppm[k][j] + 1e-3) / background_freq[base])  # Add pseudocount to avoid log(0)
 
+    print(f"Computed PWM: {pwm}")
     pwm = np.array(pwm)  # Transpose to match the format of the PFM
 
     return np.array(pwm)

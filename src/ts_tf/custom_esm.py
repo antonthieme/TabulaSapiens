@@ -10,7 +10,7 @@ import ast
 
 class ProteinDNADataset(Dataset):
     def __init__(self, sequences: pd.Series, pwms: pd.Series, padding: tuple[int, int], max_seq_len: int = 1024):
-        self.sequences = sequences # put max sequence length back restriction back?
+        self.sequences = sequences # put max sequence length restriction back?
         self.pwms = [self.process_pwm(pwm) for pwm in pwms]
         self.max_rows = padding[0]
         self.max_cols = padding[1]
@@ -29,7 +29,7 @@ class ProteinDNADataset(Dataset):
             list_of_lists = ast.literal_eval(pwm_str)
             return np.array(list_of_lists)
         except Exception as e:
-            raise ValueError(f"Error processing PWM: {e}")
+            raise ValueError(f"Error processing PWM: {e}, PWM string: {pwm_str}")
 
     def pad_pwm(self, pwm: np.ndarray) -> np.ndarray:
         padded_pwm = np.zeros((self.max_rows, self.max_cols)) # pad with <pad> token?
@@ -58,7 +58,7 @@ class CustomEsmForPWM(nn.Module):
         )
         """
         self.classifier = nn.Sequential(
-            nn.Linear(self.output_shape[0]-2, 128), # not so sure about this
+            nn.Linear(self.output_shape[0]-1, 128), # not so sure about this, had to change it from -2 to -1 for v2
             nn.ReLU(),
             nn.Linear(128, np.prod(output_shape)),
             nn.Unflatten(1, output_shape)

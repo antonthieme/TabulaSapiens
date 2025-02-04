@@ -25,7 +25,7 @@ def process_pwm(pwm_str: str) -> np.ndarray:
         list_of_lists = ast.literal_eval(pwm_str)
         return np.array(list_of_lists)
     except Exception as e:
-        raise ValueError(f"Error processing PWM: {e}")
+        raise ValueError(f"Error processing PWM: {e}, PWM string: {pwm_str}")
 
 def fine_tune_esm(model_name: str, csv_file: str, save_path: str, epochs: int = 3, lr: float = 2e-5, k_folds: int = 5, batch_size: int = 8):
     """Fine-tune the ESM model for protein-DNA interaction prediction."""
